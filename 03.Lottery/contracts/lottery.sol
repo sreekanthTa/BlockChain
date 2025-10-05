@@ -1,6 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.20;
 
+
+interface  IERC20 {
+    
+    function transferFrom(address sender, address receipt, uint amount) external returns (bool);
+    function transfer(address receipt, uint amount) external returns (bool);
+    function balanceOf(address account) external view returns (uint);
+}
+
 contract Lottery {
     address public manager;
     address[] public players;
@@ -8,6 +16,7 @@ contract Lottery {
     constructor() {
         manager = msg.sender;
     }
+
 
     function viewManager() public view returns (address) {
         return manager;
@@ -59,4 +68,7 @@ contract Lottery {
         // Reset players array
         players = new address[](0) ;
     }
+
+
+
 }
