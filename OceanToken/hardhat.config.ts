@@ -13,7 +13,6 @@ const config: HardhatUserConfig = {
 
   networks: {
     // Use the built-in Hardhat network (no type field)
-    hardhat: {},
 
     // Sepolia testnet via Alchemy
     sepolia: {
