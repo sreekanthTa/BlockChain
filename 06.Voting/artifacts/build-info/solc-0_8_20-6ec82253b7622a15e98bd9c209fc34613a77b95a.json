@@ -1,0 +1,35 @@
+{
+  "_format": "hh3-sol-build-info-1",
+  "id": "solc-0_8_20-6ec82253b7622a15e98bd9c209fc34613a77b95a",
+  "solcVersion": "0.8.20",
+  "solcLongVersion": "0.8.20+commit.a1b79de6",
+  "userSourceNameMap": {
+    "contracts/Voting.sol": "project/contracts/Voting.sol"
+  },
+  "input": {
+    "language": "Solidity",
+    "settings": {
+      "evmVersion": "shanghai",
+      "outputSelection": {
+        "*": {
+          "": [
+            "ast"
+          ],
+          "*": [
+            "abi",
+            "evm.bytecode",
+            "evm.deployedBytecode",
+            "evm.methodIdentifiers",
+            "metadata"
+          ]
+        }
+      },
+      "remappings": []
+    },
+    "sources": {
+      "project/contracts/Voting.sol": {
+        "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\ncontract Voting {\n    address public owner;\n\n    struct Proposal {\n        string title;\n        uint voteCount;\n    }\n\n    struct Voter {\n        bool voted;\n        uint vote;\n    }\n\n    Proposal[] public proposalMembers;\n    mapping(address => Voter) public voterMembers;\n    uint public totalVoters;\n\n    enum Phase { NotStarted, Registration, Voting, Ended }\n    Phase public phase;\n\n    // Events\n    event ProposalAdded(uint index, string name);\n    event VoterAdded(address voterAddress);\n    event Voted(address voterAddress, uint proposalId);\n    event PhaseChanged(Phase newPhase);\n\n    modifier onlyOwner() {\n        require(msg.sender == owner, \"Only owner can call\");\n        _;\n    }\n\n    constructor(string[] memory proposalNames) {\n        owner = msg.sender;\n        phase = Phase.Registration;\n\n        for (uint i = 0; i < proposalNames.length; i++) {\n            proposalMembers.push(Proposal({\n                title: proposalNames[i],\n                voteCount: 0\n            }));\n            emit ProposalAdded(i, proposalNames[i]);\n        }\n    }\n\n    // ✅ Only owner can add proposals, only during registration\n    function addProposals(string memory proposalName)\n        external\n        onlyOwner\n    {\n        require(phase == Phase.Registration, \"Not in registration phase\");\n        proposalMembers.push(Proposal({ title: proposalName, voteCount: 0 }));\n        emit ProposalAdded(proposalMembers.length - 1, proposalName);\n    }\n    function getProposal(uint index) external view returns (string memory title, uint voteCount) {\n        require(index < proposalMembers.length, \"Invalid proposal index\");\n        Proposal storage p = proposalMembers[index];\n        return (p.title, p.voteCount);\n    }\n    function getAllProposals() external view returns (Proposal[] memory) {\n    return proposalMembers;\n}\n\n\n    // ✅ Only owner can add voters, during registration\n    function addVoters(address voter)\n        external\n        onlyOwner\n    {\n        require(phase == Phase.Registration, \"Not registration phase\");\n        require(voter != address(0), \"Invalid address\");\n\n        Voter storage voteMember = voterMembers[voter];\n        require(!voteMember.voted, \"Already registered\");\n\n        voterMembers[voter] = Voter({ voted: false, vote: 0 });\n        totalVoters++;\n\n        emit VoterAdded(voter);\n    }\n\n    // ✅ Move to next phase (owner-controlled)\n    function nextPhase() external onlyOwner {\n        if (phase == Phase.Registration) {\n            phase = Phase.Voting;\n        } else if (phase == Phase.Voting) {\n            phase = Phase.Ended;\n        } else {\n            revert(\"Voting already ended\");\n        }\n\n        emit PhaseChanged(phase);\n    }\n\n    function getPhase()external view returns(string memory){\n        if (phase == Phase.NotStarted) return \"Not Started\";\n        else if (phase == Phase.Registration) return \"Registration\";\n        else if (phase == Phase.Voting) return \"Voting\";\n        else return \"Ended\";\n    }\n\n    function showProposals() external view returns(Proposal[] memory){\n        return proposalMembers;\n    }\n\n    // ✅ Voting function\n    function vote(uint index) external {\n        require(phase == Phase.Voting, \"Not in voting phase\");\n        require(index < proposalMembers.length, \"Invalid proposal index\");\n\n        Voter storage voter = voterMembers[msg.sender];\n        require(!voter.voted, \"Already voted\");\n\n        voter.voted = true;\n        voter.vote = index;\n\n        proposalMembers[index].voteCount += 1;\n\n        emit Voted(msg.sender, index);\n    }\n\n    // ✅ View winner (after voting ends)\n    function pickWinner() external view returns (uint winnerIndex) {\n        require(phase == Phase.Ended, \"Voting not ended yet\");\n\n        uint highestVotes = 0;\n        uint winner = 0;\n\n        for (uint i = 0; i < proposalMembers.length; i++) {\n            if (proposalMembers[i].voteCount > highestVotes) {\n                highestVotes = proposalMembers[i].voteCount;\n                winner = i;\n            }\n        }\n\n        return winner;\n    }\n\n    // ✅ Get winner name\n    function winnerName() external view returns (string memory) {\n        uint winner = this.pickWinner();\n        return proposalMembers[winner].title;\n    }\n}\n"
+      }
+    }
+  }
+}
